@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#12304a">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-title" content="竞技场助手">
+<title>畅玩版竞技场 · 反制方案</title>
+<style>
+  :root{
+    --bg:#0f2233;
+    --card:#17324a;
+    --card2:#1e3d59;
+    --ink:#e8f2fb;
+    --dim:#8fb3cd;
+    --line:#2a5375;
+    --slot-line:#4a7fa8;
+    --accent:#4fc3f7;
+    --accent2:#2b9fdc;
+    --ok:#3ddc97;
+    --warn:#ffb74d;
+    --pink:#d994a1;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#0b1a27,#12304a 40%,#0f2233);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
+    min-height:100vh;padding:14px 12px 30px;
+  }
+  .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;margin-bottom:14px}
+  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .card-head h2{margin:0;font-size:20px;font-weight:700;letter-spacing:.5px;flex:1}
+  .count{
+    background:rgba(79,195,247,.15);color:var(--accent);border-radius:999px;
+    padding:5px 12px;font-size:14px;font-weight:700;
+  }
+  .link{color:var(--accent);font-size:14px;background:none;border:0;padding:6px 2px}
+  .link:active{opacity:.6}
+
+  /* 选阵型区 */
+  .formation{
+    background:linear-gradient(180deg,rgba(217,148,161,.18),rgba(217,148,161,.06));
+    border:1px solid var(--line);border-radius:20px;padding:18px 8px 14px;
+  }
+  .row{display:flex;justify-content:center;gap:12px}
+  .row.front{margin-top:18px}
+  .slot{width:76px;display:flex;flex-direction:column;align-items:center;gap:4px}
+
+  .disc{
+    width:64px;height:64px;border-radius:18px;border:2px dashed var(--slot-line);
+    background:var(--card2);display:flex;align-items:center;justify-content:center;
+    font-size:24px;color:var(--accent);line-height:1;
+  }
+  .disc:active{transform:scale(.94)}
+
+  /* 已选英雄卡片（仿图 2） */
+  .herobox{
+    position:relative;width:64px;height:64px;border-radius:18px;
+    border:2px solid var(--pink);
+    background:linear-gradient(180deg,#1b3a55,#17324a);
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;font-weight:800;color:#f3d7dd;
+  }
+  .herobox .cls{
+    position:absolute;top:-9px;right:-9px;background:var(--ink);color:#12304a;
+    border-radius:999px;font-size:10px;font-weight:800;padding:1px 5px;
+  }
+  .herobox .gen{
+    position:absolute;bottom:-9px;left:-9px;background:#0b1a27;color:#9fd8f5;
+    border:1px solid var(--line);border-radius:8px;font-size:10px;font-weight:700;padding:1px 5px;
+  }
+  .slot .name{font-size:11px;font-weight:600;color:var(--ink);text-align:center;max-width:76px;
+              overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .slot .pos{font-size:10px;color:var(--dim)}
+
+  .hintline{
+    margin-top:14px;text-align:center;color:var(--dim);font-size:12px;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .hintline .dot{
+    width:18px;height:18px;border-radius:50%;background:rgba(79,195,247,.15);
+    color:var(--accent);font-size:11px;display:flex;align-items:center;justify-content:center;
+  }
+
+  .btn{
+    width:100%;height:54px;border:0;border-radius:16px;
+    background:linear-gradient(180deg,#4fc3f7,#2b9fdc);
+    color:#062033;font-size:17px;font-weight:700;letter-spacing:1px;
+    box-shadow:0 8px 18px rgba(79,195,247,.22);margin-top:16px;
+  }
+  .btn:disabled{background:#274a68;box-shadow:none;color:#6d8fa8}
+  .btn:active:not(:disabled){transform:translateY(1px)}
+
+  /* 结果卡 */
+  .result{display:none;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;margin-bottom:14px}
+  .result.show{display:block}
+  .r-tag{display:inline-block;font-size:12px;color:var(--accent);border:1px solid var(--line);
+         border-radius:999px;padding:2px 10px;margin-bottom:8px}
+  .r-title{font-size:26px;font-weight:800;letter-spacing:.5px;line-height:1.2}
+  .r-rate-line{display:flex;align-items:baseline;gap:8px;margin-top:6px}
+  .r-rate-big{font-size:30px;font-weight:800;color:var(--ok)}
+  .r-rate-sub{font-size:13px;color:var(--dim)}
+  .r-divider{height:1px;background:var(--line);margin:14px 0}
+  .r-names{font-size:15px;line-height:1.7;color:var(--ink)}
+  .r-names b{color:var(--accent);font-weight:600}
+  .r-record{margin-top:6px;font-size:13px;color:var(--dim)}
+
+  .side{border-radius:18px;padding:14px 8px 12px;border:1px solid var(--line)}
+  .side.enemy{background:linear-gradient(180deg,rgba(217,148,161,.16),rgba(217,148,161,.06))}
+  .side.mine{background:linear-gradient(180deg,rgba(79,195,247,.16),rgba(79,195,247,.05))}
+  .side-label{text-align:center;font-size:13px;color:var(--dim);margin-bottom:10px}
+  .side-label.bottom{margin:10px 0 0}
+  .vs{text-align:center;font-size:20px;font-weight:800;color:var(--dim);letter-spacing:4px;margin:12px 0}
+
+  .hcard{width:68px;display:flex;flex-direction:column;align-items:center;gap:3px}
+  .hbox{
+    position:relative;width:58px;height:58px;border-radius:16px;border:2px solid var(--accent);
+    background:linear-gradient(180deg,#1b3a55,#17324a);
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px;font-weight:800;color:#cfe9f7;
+  }
+  .side.enemy .hbox{border-color:var(--pink);color:#f3d7dd}
+  .hbox .cls{position:absolute;top:-7px;right:-7px;background:var(--ink);color:#12304a;
+             border-radius:999px;font-size:10px;font-weight:800;padding:1px 5px}
+  .hbox .gen{position:absolute;bottom:-7px;left:-7px;background:#0b1a27;color:#9fd8f5;
+             border:1px solid var(--line);border-radius:8px;font-size:10px;font-weight:700;padding:1px 5px}
+  .hname{font-size:11px;color:var(--ink);text-align:center;line-height:1.2;max-width:68px;
+         overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hpos{font-size:10px;color:var(--dim)}
+
+  .hint{margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(255,183,77,.12);color:var(--warn);font-size:13px}
+
+  /* 选择器 */
+  .mask{position:fixed;inset:0;background:rgba(4,12,20,.55);display:none;z-index:50}
+  .mask.show{display:block}
+  .sheet{
+    position:fixed;left:0;right:0;bottom:-100%;z-index:60;background:var(--card);
+    border-top:1px solid var(--line);border-radius:22px 22px 0 0;max-height:80vh;
+    display:flex;flex-direction:column;transition:bottom .22s ease;
+    box-shadow:0 -8px 28px rgba(0,0,0,.45);
+  }
+  .sheet.show{bottom:0}
+  .sheet-head{padding:16px 18px 8px;display:flex;align-items:center;justify-content:space-between}
+  .sheet-head h3{margin:0;font-size:17px}
+  .genbar{display:flex;gap:8px;overflow-x:auto;padding:4px 16px 10px;scrollbar-width:none}
+  .genbar::-webkit-scrollbar{display:none}
+  .chip{
+    flex:0 0 auto;border:1px solid var(--line);background:var(--card2);color:var(--dim);
+    border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;
+  }
+  .chip.active{background:linear-gradient(180deg,#4fc3f7,#2b9fdc);color:#062033;border-color:transparent}
+  .search{margin:8px 16px 10px;display:flex;align-items:center;gap:8px;background:var(--card2);
+          border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .search input{border:0;background:none;outline:none;flex:1;font-size:15px;color:var(--ink)}
+  .heroes{overflow:auto;padding:0 14px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+  .hero{border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center;background:var(--card2)}
+  .hero:active{background:#27506f}
+  .hero b{display:block;font-size:14px;color:var(--ink)}
+  .hero span{display:block;font-size:11px;color:var(--dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hero .gen{color:var(--accent);font-weight:700}
+  .hero.used{opacity:.45}
+  .hero.used b::after{content:" 已选";font-size:10px;color:var(--warn);font-weight:700}
+  .foot{text-align:center;color:var(--dim);font-size:12px;padding:6px 0 0}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-head">
+    <h2>固定敌方</h2>
+    <span class="count" id="countBadge">0 / 5</span>
+    <button class="link" id="clearBtn">清空</button>
+  </div>
+  <div class="formation">
+    <div class="row" id="backRow"></div>
+    <div class="row front" id="frontRow"></div>
+  </div>
+  <div class="hintline"><span class="dot">↔</span>点击已选英雄可取消</div>
+  <button class="btn" id="queryBtn" disabled>查询反制方案</button>
+</div>
+
+<div class="result" id="result">
+  <div class="r-tag" id="rTag">推荐方案</div>
+  <div class="r-title" id="rTitle">—</div>
+  <div class="r-rate-line">
+    <span class="r-rate-big" id="rRate">—</span>
+    <span class="r-rate-sub" id="rRateSub">进攻胜率</span>
+  </div>
+  <div class="r-divider"></div>
+  <div class="r-names" id="rNames">—</div>
+  <div class="r-record" id="rRecord"></div>
+
+  <div class="side enemy" style="margin-top:14px">
+    <div class="side-label">固定敌方</div>
+    <div class="row" id="enemyBack"></div>
+    <div class="row front" id="enemyFront"></div>
+  </div>
+
+  <div class="vs">VS</div>
+
+  <div class="side mine">
+    <div class="row" id="mineFront"></div>
+    <div class="row front" id="mineBack"></div>
+    <div class="side-label bottom">我方推荐站位</div>
+  </div>
+
+  <div class="hint" id="rHint" style="display:none"></div>
+</div>
+
+<div class="foot" id="foot">数据加载中…</div>
+
+<div class="mask" id="mask"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-head">
+    <h3 id="sheetTitle">选择英雄</h3>
+    <button class="link" id="sheetClose">关闭</button>
+  </div>
+  <div class="genbar" id="genBar"></div>
+  <div class="search">
+    <input id="searchBox" placeholder="搜索代号或名字，如 12盾 / 布拉德利" autocomplete="off">
+  </div>
+  <div class="heroes" id="heroes"></div>
+</div>
+
+<script>
+const API_JSON = "api/lineups";
+const REMOTE_JSON = (new URLSearchParams(location.search).get("data")) || "";
+const CACHE_KEY = "arena_lineups_cache_v3";
+
+// 库里「对手1~5」与站位：
+// 对手1=前排右 对手2=前排左 对手3=后排右 对手4=后排中 对手5=后排左
+const SLOTS = [
+  { d: 4, label: "后排左" },
+  { d: 3, label: "后排中" },
+  { d: 2, label: "后排右" },
+  { d: 1, label: "前排左" },
+  { d: 0, label: "前排右" }
+];
+// 自动填充顺序：前右 → 前左 → 后右 → 后中 → 后左
+const FILL_ORDER = [0, 1, 2, 3, 4];
+
+let DATA = null;
+let picking = -1;
+let genFilter = 0;
+const picked = [null, null, null, null, null];
+
+function heroInfo(id){
+  const h = DATA && DATA.heroes && DATA.heroes[String(id)];
+  return { code: h ? (h.code || "") : "", name: h ? (h.name || String(id)) : String(id) };
+}
+function heroText(id){ const h = heroInfo(id); return h.code || h.name; }
+function parseCode(code){
+  const m = /(\d+)/.exec(code || "");
+  return { gen: m ? parseInt(m[1], 10) : 0, cls: (code || "").slice(-1) || "" };
+}
+
+function applyData(data){
+  DATA = data;
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch (e) {}
+  renderSlots();
+  const n = (data.lineups || []).length;
+  document.getElementById("foot").textContent = "共 " + n + " 套阵容 · 更新于 " + new Date().toLocaleString();
+}
+
+function heroCardEl(id, posLabel, onClick){
+  const info = heroInfo(id);
+  const pc = parseCode(info.code);
+  const wrap = document.createElement("div");
+  wrap.className = "slot";
+  const box = document.createElement("div");
+  box.className = "herobox";
+  box.textContent = (info.name || "?").slice(0, 1);
+  const cls = document.createElement("div"); cls.className = "cls"; cls.textContent = pc.cls || "?";
+  const gen = document.createElement("div"); gen.className = "gen"; gen.textContent = "S" + (pc.gen || "?");
+  box.appendChild(cls); box.appendChild(gen);
+  if (onClick) box.onclick = onClick;
+  const name = document.createElement("div"); name.className = "name"; name.textContent = info.name;
+  const pos = document.createElement("div"); pos.className = "pos"; pos.textContent = posLabel;
+  wrap.appendChild(box); wrap.appendChild(name); wrap.appendChild(pos);
+  return wrap;
+}
+
+function renderSlots(){
+  const back = document.getElementById("backRow");
+  const front = document.getElementById("frontRow");
+  back.innerHTML = ""; front.innerHTML = "";
+  SLOTS.forEach((cfg, order) => {
+    const i = cfg.d;
+    let el;
+    if (picked[i]){
+      el = heroCardEl(picked[i], cfg.label, () => {   // 点击已选 → 取消
+        picked[i] = null;
+        renderSlots();
+        document.getElementById("result").classList.remove("show");
+      });
+    } else {
+      el = document.createElement("div");
+      el.className = "slot";
+      const disc = document.createElement("div");
+      disc.className = "disc";
+      disc.textContent = "+";
+      disc.onclick = () => openPicker(i);
+      const name = document.createElement("div");
+      name.className = "name"; name.textContent = "等待选择";
+      const pos = document.createElement("div");
+      pos.className = "pos"; pos.textContent = cfg.label;
+      el.appendChild(disc); el.appendChild(name); el.appendChild(pos);
+    }
+    (order < 3 ? back : front).appendChild(el);
+  });
+  const filled = picked.filter(v => v).length;
+  document.getElementById("countBadge").textContent = filled + " / 5";
+  document.getElementById("queryBtn").disabled = filled < 5;
+}
+
+function setSheetTitle(){
+  const label = (SLOTS.find(s => s.d === picking) || {}).label || "";
+  const filled = picked.filter(v => v).length;
+  document.getElementById("sheetTitle").textContent = "选择英雄 · " + label + "（" + filled + "/5）";
+}
+
+function openPicker(index){
+  picking = index;
+  document.getElementById("searchBox").value = "";
+  setSheetTitle();
+  buildGenBar();
+  renderHeroes("");
+  document.getElementById("mask").classList.add("show");
+  document.getElementById("sheet").classList.add("show");
+}
+function closePicker(){
+  picking = -1;
+  document.getElementById("mask").classList.remove("show");
+  document.getElementById("sheet").classList.remove("show");
+}
+
+function buildGenBar(){
+  const bar = document.getElementById("genBar");
+  bar.innerHTML = "";
+  const gens = new Set();
+  Object.keys((DATA && DATA.heroes) || {}).forEach(id => {
+    const g = parseCode(heroInfo(Number(id)).code).gen;
+    if (g > 0) gens.add(g);
+  });
+  const list = [0].concat(Array.from(gens).sort((a, b) => b - a));
+  list.forEach(g => {
+    const chip = document.createElement("button");
+    chip.className = "chip" + (genFilter === g ? " active" : "");
+    chip.textContent = g === 0 ? "全部" : (g + " 代");
+    chip.onclick = () => {
+      genFilter = g;
+      buildGenBar();
+      renderHeroes(document.getElementById("searchBox").value);
+    };
+    bar.appendChild(chip);
+  });
+}
+
+function renderHeroes(keyword){
+  const box = document.getElementById("heroes");
+  box.innerHTML = "";
+  if (!DATA) return;
+  const kw = (keyword || "").trim().toLowerCase();
+  const ids = Object.keys(DATA.heroes || {}).map(Number);
+  ids.sort((a, b) => {
+    const ga = parseCode(heroInfo(a).code).gen, gb = parseCode(heroInfo(b).code).gen;
+    if (gb !== ga) return gb - ga;
+    return heroText(a).localeCompare(heroText(b), "zh");
+  });
+  let shown = 0;
+  for (const id of ids){
+    const h = heroInfo(id);
+    const gen = parseCode(h.code).gen;
+    if (genFilter > 0 && gen > genFilter) continue;
+    if (kw && (h.code + " " + h.name).toLowerCase().indexOf(kw) < 0) continue;
+    const usedElsewhere = picked.some((v, i) => v === id && i !== picking);
+    const el = document.createElement("div");
+    el.className = "hero" + (usedElsewhere ? " used" : "");
+    el.innerHTML = "<b><span class='gen'>" + (h.code || "—") + "</span></b><span>" + h.name + "</span>";
+    if (!usedElsewhere){
+      el.onclick = () => {
+        picked[picking] = id;
+        renderSlots();
+        document.getElementById("result").classList.remove("show");
+        const empty = FILL_ORDER.find(d => !picked[d]);
+        if (empty === undefined){ closePicker(); return; }
+        picking = empty;
+        setSheetTitle();
+        renderHeroes(document.getElementById("searchBox").value);
+      };
+    }
+    box.appendChild(el);
+    if (++shown >= 300) break;
+  }
+  if (!shown) box.innerHTML = "<div style='color:#8fb3cd;font-size:14px;padding:8px'>没找到这个英雄</div>";
+}
+
+function compositionKey(ids){ return ids.slice().sort((a, b) => a - b).join(","); }
+
+function renderPanel(ids, backBox, frontBox){
+  backBox.innerHTML = ""; frontBox.innerHTML = "";
+  SLOTS.forEach(cfg => {
+    const id = ids[cfg.d];
+    if (!id) return;
+    const card = heroCardEl(id, cfg.label, null);
+    card.className = "hcard";
+    const box = card.querySelector(".herobox");
+    box.className = "hbox";
+    const nm = card.querySelector(".name");
+    nm.className = "hname";
+    const ps = card.querySelector(".pos");
+    ps.className = "hpos";
+    (cfg.label.indexOf("后排") === 0 ? backBox : frontBox).appendChild(card);
+  });
+}
+
+function compositionTitle(ids){
+  const count = { "盾": 0, "矛": 0, "弓": 0 };
+  ids.forEach(id => {
+    const cls = parseCode(heroInfo(id).code).cls;
+    if (count[cls] !== undefined) count[cls] += 1;
+  });
+  const parts = [];
+  if (count["盾"]) parts.push(count["盾"] + "盾");
+  if (count["矛"]) parts.push(count["矛"] + "矛");
+  if (count["弓"]) parts.push(count["弓"] + "弓");
+  return parts.join(" + ");
+}
+
+function query(){
+  if (!DATA || picked.some(v => !v)) return;
+  const key = picked.join(",");
+  let hit = (DATA.lineups || []).find(e => (e.lineup || []).join(",") === key);
+  let fuzzy = false;
+  if (!hit){
+    const ck = compositionKey(picked);
+    hit = (DATA.lineups || []).find(e => compositionKey(e.lineup || []) === ck);
+    fuzzy = !!hit;
+  }
+
+  const res = document.getElementById("result");
+  res.classList.add("show");
+  document.getElementById("rTag").textContent = fuzzy ? "站位不同 · 仅供参考" : "推荐方案";
+  renderPanel(picked, document.getElementById("enemyBack"), document.getElementById("enemyFront"));
+
+  if (!hit){
+    document.getElementById("rTitle").textContent = "未收录";
+    document.getElementById("rRate").textContent = "—";
+    document.getElementById("rRateSub").textContent = "";
+    document.getElementById("rNames").textContent = "库里没有这套阵容，请到电脑端补录。";
+    document.getElementById("rRecord").textContent = "";
+    document.getElementById("mineFront").innerHTML = "";
+    document.getElementById("mineBack").innerHTML = "";
+    document.getElementById("rHint").style.display = "none";
+    res.scrollIntoView({behavior:"smooth", block:"nearest"});
+    return;
+  }
+
+  const counter = hit.counter || [];
+  const rateNum = parseInt(String(hit.winrate || 0).replace("%", ""), 10) || 0;
+  document.getElementById("rTitle").textContent = compositionTitle(counter) || "克制阵容";
+  document.getElementById("rRate").textContent = rateNum ? (rateNum + "%") : "—";
+  document.getElementById("rRateSub").textContent = "进攻胜率 · 100 场模拟";
+  document.getElementById("rNames").innerHTML = counter.length
+    ? counter.map(id => "<b>" + heroInfo(id).name + "</b>").join(" / ")
+    : "（待补克制）";
+  document.getElementById("rRecord").textContent = rateNum
+    ? (rateNum + " 胜 / " + (100 - rateNum) + " 负（按 100 场折算）") : "";
+  renderPanel(counter, document.getElementById("mineBack"), document.getElementById("mineFront"));
+
+  const hint = document.getElementById("rHint");
+  if (fuzzy){
+    hint.style.display = "block";
+    hint.textContent = "库里这套站位不同：" + (hit.lineup || []).map(id => heroInfo(id).name).join(" / ");
+  } else {
+    hint.style.display = "none";
+  }
+  res.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+async function load(){
+  const cached = localStorage.getItem(CACHE_KEY);
+  if (cached){ try { applyData(JSON.parse(cached)); } catch (e) {} }
+  const sources = REMOTE_JSON ? [REMOTE_JSON] : ["lineups.json", API_JSON];
+  try {
+    let data = null, lastErr = null;
+    for (const src of sources){
+      try {
+        const resp = await fetch(src + (src.indexOf("?") >= 0 ? "&" : "?") + "t=" + Date.now(), {cache:"no-store"});
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        data = await resp.json();
+        break;
+      } catch (e) { lastErr = e; }
+    }
+    if (!data) throw lastErr || new Error("无数据源");
+    applyData(data);
+  } catch (err) {
+    if (!DATA) document.getElementById("foot").textContent = "数据加载失败：" + err.message;
+  }
+}
+
+document.getElementById("queryBtn").addEventListener("click", query);
+document.getElementById("clearBtn").addEventListener("click", () => {
+  for (let i = 0; i < 5; i++) picked[i] = null;
+  renderSlots();
+  document.getElementById("result").classList.remove("show");
+});
+document.getElementById("mask").addEventListener("click", closePicker);
+document.getElementById("sheetClose").addEventListener("click", closePicker);
+document.getElementById("searchBox").addEventListener("input", (e) => renderHeroes(e.target.value));
+
+load();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then((list) => {
+    list.forEach((reg) => reg.unregister().catch(() => {}));
+  }).catch(() => {});
+}
+if (window.caches && caches.keys) {
+  caches.keys().then((keys) => keys.forEach((k) => caches.delete(k))).catch(() => {});
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "畅玩版竞技场助手",
+  "short_name": "竞技场助手",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b1a27",
+  "theme_color": "#12304a",
+  "icons": []
+}
