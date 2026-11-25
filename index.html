@@ -346,6 +346,25 @@ function setSheetTitle(){
   document.getElementById("sheetTitle").textContent = "选择英雄 · " + label + "（" + filled + "/5）";
 }
 
+function buildGenOptions(){
+  const sel = document.getElementById("genSelect");
+  if (!sel) return;
+  const gens = new Set();
+  Object.keys((DATA && DATA.heroes) || {}).forEach(id => {
+    const g = parseCode(heroInfo(Number(id)).code).gen;
+    if (g > 0) gens.add(g);
+  });
+  const list = [0].concat(Array.from(gens).sort((a, b) => b - a));
+  sel.innerHTML = list.map(g =>
+    "<option value='" + g + "'>" + (g === 0 ? "全部代数" : g + " 代及以下") + "</option>"
+  ).join("");
+  sel.value = String(genFilter);
+  sel.onchange = () => {
+    genFilter = parseInt(sel.value, 10) || 0;
+    renderHeroes(document.getElementById("searchBox").value);
+  };
+}
+
 function openPicker(index){
   picking = index;
   document.getElementById("searchBox").value = "";
