@@ -140,37 +140,33 @@
   .mask.show{display:block}
   .sheet{
     position:fixed;left:0;right:0;bottom:-100%;z-index:60;background:var(--card);
-    border-top:1px solid var(--line);border-radius:22px 22px 0 0;max-height:80vh;
-    display:flex;flex-direction:column;transition:bottom .22s ease;
+    border-top:1px solid var(--line);border-radius:22px 22px 0 0;
+    display:flex;flex-direction:column;
     box-shadow:0 -8px 28px rgba(0,0,0,.45);
   }
   .sheet.show{bottom:0}
+  .sheet .heroes{flex:1;min-height:0}
+  body.sheet-open{overflow:hidden}
   .sheet-head{padding:16px 18px 8px;display:flex;align-items:center;justify-content:space-between}
   .sheet-head h3{margin:0;font-size:17px}
-  .genbar{
-    display:flex;flex-wrap:nowrap;gap:8px;padding:4px 16px 10px;
-    overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
+  .pickrow{display:flex;gap:8px;margin:8px 16px 10px;align-items:center}
+  .genselect{
+    flex:0 0 96px;background:var(--card2);border:1px solid var(--line);color:var(--ink);
+    border-radius:12px;padding:10px 8px;font-size:14px;font-weight:600;outline:none;
   }
-  .genbar::-webkit-scrollbar{display:none}
-  .chip{
-    flex:0 0 74px;width:74px;height:34px;line-height:32px;padding:0;text-align:center;
-    border:1px solid var(--line);background:var(--card2);color:var(--dim);
-    border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;
-  }
-  .chip.active{background:linear-gradient(180deg,#4fc3f7,#2b9fdc);color:#062033;border-color:transparent}
-  .search{margin:8px 16px 10px;display:flex;align-items:center;gap:8px;background:var(--card2);
-          border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .search{flex:1;display:flex;align-items:center;gap:8px;background:var(--card2);
+          border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
   .search input{border:0;background:none;outline:none;flex:1;font-size:15px;color:var(--ink)}
-  .heroes{overflow:auto;padding:0 14px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+  .heroes{overflow:auto;padding:0 10px 18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px}
   .hero{
-    border:1px solid var(--line);border-radius:12px;padding:0 6px;text-align:center;
-    background:var(--card2);height:62px;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:1px;
+    border:1px solid var(--line);border-radius:10px;padding:0 4px;text-align:center;
+    background:var(--card2);height:48px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:0;
   }
   .hero:active{background:#27506f}
-  .hero b{display:block;font-size:14px;line-height:18px;color:var(--ink)}
-  .hero span{display:block;font-size:11px;line-height:15px;color:var(--dim);
+  .hero b{display:block;font-size:13px;line-height:16px;color:var(--ink);max-width:100%;
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hero span{display:block;font-size:10px;line-height:13px;color:var(--dim);
              overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
   .hero .gen{color:var(--accent);font-weight:700}
   .hero.used{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok);background:rgba(61,220,151,.12)}
@@ -230,9 +226,11 @@
     <h3 id="sheetTitle">选择英雄</h3>
     <button class="link" id="sheetClose">关闭</button>
   </div>
-  <div class="genbar" id="genBar"></div>
-  <div class="search">
-    <input id="searchBox" placeholder="搜索代号或名字，如 12盾 / 布拉德利" autocomplete="off">
+  <div class="pickrow">
+    <select id="genSelect" class="genselect"></select>
+    <div class="search">
+      <input id="searchBox" placeholder="搜索代号或名字，如 12盾 / 布拉德利" autocomplete="off">
+    </div>
   </div>
   <div class="heroes" id="heroes"></div>
 </div>
@@ -338,42 +336,36 @@ function openPicker(index){
   picking = index;
   document.getElementById("searchBox").value = "";
   setSheetTitle();
-  buildGenBar();
+  buildGenOptions();
   renderHeroes("");
-  document.getElementById("mask").classList.add("show");
-  document.getElementById("sheet").classList.add("show");
+
+  // 面板只出现在「固定敌方」卡片下方，不遮挡上面的棋盘
+  document.body.classList.add("sheet-open");
+  window.scrollTo(0, 0);
+  const card = document.querySelector(".card");
+  let top = Math.ceil(card.getBoundingClientRect().bottom) + 8;
+  // 屏幕太矮时留出至少 280px 给选择面板，避免只剩一条缝
+  if (window.innerHeight - top < 280) {
+    top = Math.max(120, Math.round(window.innerHeight * 0.38));
+  }
+  const sheet = document.getElementById("sheet");
+  const mask = document.getElementById("mask");
+  sheet.style.top = top + "px";
+  sheet.style.bottom = "0px";
+  mask.style.top = top + "px";
+  mask.classList.add("show");
+  sheet.classList.add("show");
 }
 function closePicker(){
   picking = -1;
-  document.getElementById("mask").classList.remove("show");
-  document.getElementById("sheet").classList.remove("show");
-}
-
-function buildGenBar(){
-  const bar = document.getElementById("genBar");
-  bar.innerHTML = "";
-  const gens = new Set();
-  Object.keys((DATA && DATA.heroes) || {}).forEach(id => {
-    const g = parseCode(heroInfo(Number(id)).code).gen;
-    if (g > 0) gens.add(g);
-  });
-  const list = [0].concat(Array.from(gens).sort((a, b) => b - a));
-  list.forEach(g => {
-    const chip = document.createElement("button");
-    chip.className = "chip" + (genFilter === g ? " active" : "");
-    chip.textContent = g === 0 ? "全部" : (g + " 代");
-    chip.onclick = () => {
-      genFilter = g;
-      buildGenBar();
-      renderHeroes(document.getElementById("searchBox").value);
-    };
-    bar.appendChild(chip);
-    if (genFilter === g) {
-      setTimeout(() => {
-        try { chip.scrollIntoView({behavior:"instant", inline:"center", block:"nearest"}); } catch (e) { }
-      }, 0);
-    }
-  });
+  const sheet = document.getElementById("sheet");
+  const mask = document.getElementById("mask");
+  sheet.classList.remove("show");
+  mask.classList.remove("show");
+  sheet.style.top = "";
+  sheet.style.bottom = "";
+  mask.style.top = "";
+  document.body.classList.remove("sheet-open");
 }
 
 function renderHeroes(keyword){
