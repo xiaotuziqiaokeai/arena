@@ -147,10 +147,16 @@
   .sheet.show{bottom:0}
   .sheet-head{padding:16px 18px 8px;display:flex;align-items:center;justify-content:space-between}
   .sheet-head h3{margin:0;font-size:17px}
-  .genbar{display:flex;flex-wrap:wrap;gap:8px;padding:4px 16px 10px}
+  .genbar{
+    display:flex;flex-wrap:nowrap;gap:8px;padding:4px 16px 10px;
+    overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .genbar::-webkit-scrollbar{display:none}
   .chip{
-    flex:0 0 auto;border:1px solid var(--line);background:var(--card2);color:var(--dim);
-    border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;
+    flex:0 0 74px;width:74px;height:34px;line-height:32px;padding:0;text-align:center;
+    border:1px solid var(--line);background:var(--card2);color:var(--dim);
+    border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;
   }
   .chip.active{background:linear-gradient(180deg,#4fc3f7,#2b9fdc);color:#062033;border-color:transparent}
   .search{margin:8px 16px 10px;display:flex;align-items:center;gap:8px;background:var(--card2);
@@ -362,6 +368,11 @@ function buildGenBar(){
       renderHeroes(document.getElementById("searchBox").value);
     };
     bar.appendChild(chip);
+    if (genFilter === g) {
+      setTimeout(() => {
+        try { chip.scrollIntoView({behavior:"instant", inline:"center", block:"nearest"}); } catch (e) { }
+      }, 0);
+    }
   });
 }
 
