@@ -48,7 +48,7 @@
   }
   .row{display:flex;justify-content:center;gap:12px}
   .row.front{margin-top:18px}
-  .slot{width:76px;height:106px;display:flex;flex-direction:column;align-items:center;
+  .slot{width:76px;height:106px;cursor:pointer;display:flex;flex-direction:column;align-items:center;
         justify-content:flex-start;gap:4px}
 
   .disc{
@@ -218,6 +218,10 @@
   <div class="hint" id="rHint" style="display:none"></div>
 </div>
 
+<div id="errBar" style="display:none;position:fixed;left:8px;right:8px;top:8px;z-index:99;
+     background:#7f1d1d;color:#fff;border-radius:10px;padding:10px 12px;font-size:12px;
+     white-space:pre-wrap;word-break:break-all"></div>
+
 <div class="foot" id="foot">数据加载中…</div>
 
 <div class="mask" id="mask"></div>
@@ -236,6 +240,14 @@
 </div>
 
 <script>
+window.onerror = function (msg, src, line, col) {
+  var bar = document.getElementById("errBar");
+  if (bar) {
+    bar.style.display = "block";
+    bar.textContent = "脚本错误: " + msg + "\n位置: 第 " + line + " 行";
+  }
+};
+
 const API_JSON = "api/lineups";
 const REMOTE_JSON = (new URLSearchParams(location.search).get("data")) || "";
 const CACHE_KEY = "arena_lineups_cache_v3";
@@ -312,7 +324,9 @@ function renderSlots(){
       const disc = document.createElement("div");
       disc.className = "disc";
       disc.textContent = "+";
-      disc.onclick = () => openPicker(i);
+      disc.style.cursor = "pointer";
+      el.onclick = () => openPicker(i);
+      disc.onclick = (ev) => { if (ev) ev.stopPropagation(); openPicker(i); };
       const name = document.createElement("div");
       name.className = "name"; name.textContent = "等待选择";
       const pos = document.createElement("div");
@@ -336,26 +350,45 @@ function openPicker(index){
   picking = index;
   document.getElementById("searchBox").value = "";
   setSheetTitle();
-  buildGenOptions();
+  try { buildGenOptions(); } catch (e) { console.error(e); }
   renderHeroes("");
 
-  // 面板只出现在「固定敌方」卡片下方，不遮挡上面的棋盘
-  document.body.classList.add("sheet-open");
-  window.scrollTo(0, 0);
-  const card = document.querySelector(".card");
-  let top = Math.ceil(card.getBoundingClientRect().bottom) + 8;
-  // 屏幕太矮时留出至少 280px 给选择面板，避免只剩一条缝
-  if (window.innerHeight - top < 280) {
-    top = Math.max(120, Math.round(window.innerHeight * 0.38));
-  }
   const sheet = document.getElementById("sheet");
   const mask = document.getElementById("mask");
+
+  // 计算面板上沿：优先贴着「固定敌方」卡片下沿；任何异常都回退到 15% 屏高
+  let top = Math.round(window.innerHeight * 0.15);
+  try {
+    const card = document.querySelector(".card");
+    if (card) {
+      const bottom = Math.ceil(card.getBoundingClientRect().bottom) + 8;
+      top = bottom;
+      if (window.innerHeight - top < 280) {
+        top = Math.max(90, Math.round(window.innerHeight * 0.38));
+      }
+    }
+  } catch (e) { console.error(e); }
+
+  try { window.scrollTo(0, 0); } catch (e) { }
+  document.body.classList.add("sheet-open");
+
   sheet.style.top = top + "px";
   sheet.style.bottom = "0px";
+  sheet.style.display = "flex";
   mask.style.top = top + "px";
   mask.classList.add("show");
   sheet.classList.add("show");
+
+  // 兜底：如果面板没显示出来（高度异常），改成占满下半屏
+  setTimeout(() => {
+    const r = sheet.getBoundingClientRect();
+    if (r.height < 120) {
+      sheet.style.top = Math.round(window.innerHeight * 0.35) + "px";
+      mask.style.top = sheet.style.top;
+    }
+  }, 60);
 }
+
 function closePicker(){
   picking = -1;
   const sheet = document.getElementById("sheet");
@@ -364,6 +397,7 @@ function closePicker(){
   mask.classList.remove("show");
   sheet.style.top = "";
   sheet.style.bottom = "";
+  sheet.style.display = "";
   mask.style.top = "";
   document.body.classList.remove("sheet-open");
 }
