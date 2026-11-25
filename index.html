@@ -139,14 +139,14 @@
   .mask{position:fixed;inset:0;background:rgba(4,12,20,.55);display:none;z-index:50}
   .mask.show{display:block}
   .sheet{
-    position:fixed;left:0;right:0;bottom:-100%;z-index:60;background:var(--card);
+    position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--card);
     border-top:1px solid var(--line);border-radius:22px 22px 0 0;
-    display:flex;flex-direction:column;
+    display:flex;flex-direction:column;max-height:62vh;
+    transform:translateY(105%);transition:transform .2s ease;
     box-shadow:0 -8px 28px rgba(0,0,0,.45);
   }
-  .sheet.show{bottom:0}
-  .sheet .heroes{flex:1;min-height:0}
-  body.sheet-open{overflow:hidden}
+  .sheet.show{transform:translateY(0)}
+  .sheet .heroes{flex:1;min-height:0;overscroll-behavior:contain}
   .sheet-head{padding:16px 18px 8px;display:flex;align-items:center;justify-content:space-between}
   .sheet-head h3{margin:0;font-size:17px}
   .pickrow{display:flex;gap:8px;margin:8px 16px 10px;align-items:center}
@@ -350,56 +350,17 @@ function openPicker(index){
   picking = index;
   document.getElementById("searchBox").value = "";
   setSheetTitle();
-  try { buildGenOptions(); } catch (e) { console.error(e); }
+  buildGenOptions();
   renderHeroes("");
-
-  const sheet = document.getElementById("sheet");
-  const mask = document.getElementById("mask");
-
-  // 计算面板上沿：优先贴着「固定敌方」卡片下沿；任何异常都回退到 15% 屏高
-  let top = Math.round(window.innerHeight * 0.15);
-  try {
-    const card = document.querySelector(".card");
-    if (card) {
-      const bottom = Math.ceil(card.getBoundingClientRect().bottom) + 8;
-      top = bottom;
-      if (window.innerHeight - top < 280) {
-        top = Math.max(90, Math.round(window.innerHeight * 0.38));
-      }
-    }
-  } catch (e) { console.error(e); }
-
-  try { window.scrollTo(0, 0); } catch (e) { }
-  document.body.classList.add("sheet-open");
-
-  sheet.style.top = top + "px";
-  sheet.style.bottom = "0px";
-  sheet.style.display = "flex";
-  mask.style.top = top + "px";
-  mask.classList.add("show");
-  sheet.classList.add("show");
-
-  // 兜底：如果面板没显示出来（高度异常），改成占满下半屏
-  setTimeout(() => {
-    const r = sheet.getBoundingClientRect();
-    if (r.height < 120) {
-      sheet.style.top = Math.round(window.innerHeight * 0.35) + "px";
-      mask.style.top = sheet.style.top;
-    }
-  }, 60);
+  window.scrollTo({ top: 0, behavior: "auto" });
+  document.getElementById("mask").classList.add("show");
+  document.getElementById("sheet").classList.add("show");
 }
 
 function closePicker(){
   picking = -1;
-  const sheet = document.getElementById("sheet");
-  const mask = document.getElementById("mask");
-  sheet.classList.remove("show");
-  mask.classList.remove("show");
-  sheet.style.top = "";
-  sheet.style.bottom = "";
-  sheet.style.display = "";
-  mask.style.top = "";
-  document.body.classList.remove("sheet-open");
+  document.getElementById("mask").classList.remove("show");
+  document.getElementById("sheet").classList.remove("show");
 }
 
 function renderHeroes(keyword){
