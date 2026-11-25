@@ -157,14 +157,18 @@
           border:1px solid var(--line);border-radius:12px;padding:10px 12px}
   .search input{border:0;background:none;outline:none;flex:1;font-size:15px;color:var(--ink)}
   .heroes{overflow:auto;padding:0 14px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
-  .hero{border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center;background:var(--card2)}
+  .hero{
+    border:1px solid var(--line);border-radius:12px;padding:0 6px;text-align:center;
+    background:var(--card2);height:62px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:1px;
+  }
   .hero:active{background:#27506f}
-  .hero b{display:block;font-size:14px;color:var(--ink)}
-  .hero span{display:block;font-size:11px;color:var(--dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hero b{display:block;font-size:14px;line-height:18px;color:var(--ink)}
+  .hero span{display:block;font-size:11px;line-height:15px;color:var(--dim);
+             overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
   .hero .gen{color:var(--accent);font-weight:700}
-  .hero.used{border-color:var(--warn);background:rgba(255,183,77,.10)}
-  .hero.used b{color:var(--warn)}
-  .hero.used b::after{content:" 已选";font-size:10px;color:var(--warn);font-weight:700}
+  .hero.used{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok);background:rgba(61,220,151,.12)}
+  .hero.used .gen{color:var(--ok)}
   .foot{text-align:center;color:var(--dim);font-size:12px;padding:6px 0 0}
 </style>
 </head>
